@@ -1,0 +1,82 @@
+{
+    "appKeys": {
+        "device_id": 3,
+        "device_list": 2,
+        "device_location": 4,
+        "device_name": 5,
+        "device_status": 7,
+        "device_type": 6,
+        "error_message": 1,
+        "function_key": 0,
+        "status_changed": 8
+    },
+    "capabilities": [
+        "configurable"
+    ],
+    "companyName": "SeaPea Software",
+    "longName": "HomeP",
+    "projectType": "native",
+    "resources": {
+        "media": [
+            {
+                "file": "images/Garage_Step4.png",
+                "name": "IMAGE_GARAGE_STEP4",
+                "type": "png"
+            },
+            {
+                "file": "images/Garage_Step3.png",
+                "name": "IMAGE_GARAGE_STEP3",
+                "type": "png"
+            },
+            {
+                "file": "images/Garage_Step2.png",
+                "name": "IMAGE_GARAGE_STEP2",
+                "type": "png"
+            },
+            {
+                "file": "images/Garage_Step1.png",
+                "name": "IMAGE_GARAGE_STEP1",
+                "type": "png"
+            },
+            {
+                "file": "images/HomeP_AppIcon.png",
+                "menuIcon": true,
+                "name": "IMAGE_APPICON",
+                "type": "png"
+            },
+            {
+                "file": "images/Garage_Open.png",
+                "name": "IMAGE_GARAGE_OPEN",
+                "type": "png"
+            },
+            {
+                "file": "images/Garage_Closed.png",
+                "name": "IMAGE_GARAGE_CLOSED",
+                "type": "png"
+            },
+            {
+                "file": "images/LightningAction.png",
+                "name": "IMAGE_ACTION_SET",
+                "type": "png"
+            },
+            {
+                "file": "images/DownAction.png",
+                "name": "IMAGE_ACTION_DOWN",
+                "type": "png"
+            },
+            {
+                "file": "images/UpAction.png",
+                "name": "IMAGE_ACTION_UP",
+                "type": "png"
+            }
+        ]
+    },
+    "sdkVersion": "2",
+    "shortName": "HomeP",
+    "uuid": "40f772c3-87f6-4b8c-a480-0508421748dc",
+    "versionCode": 1,
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": false
+    }
+}
