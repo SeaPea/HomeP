@@ -36,7 +36,8 @@ var Device_Status = {
   OnOpen: 1,
   OffClosed: 2,
   Opening: 4,
-  Closing: 5
+  Closing: 5,
+  VGDOOpen: 9
 };
 
 var salt = "WgGF^*(@!GJEK0fkjGIfy*&*^#&*TJKSFJK357HFQWYFF761YFPSDYbsnabMNBC&*";
@@ -271,7 +272,7 @@ function getParentDeviceName(devices, parentid) {
     for (var i = 0; i < devices.length; i++) {
       if (devices[i].MyQDeviceId == parentid) return getAttrVal(devices[i], "desc");
     }
-    return "Loc Not Found";
+    return "";
   } else {
     return "Bad Devices";
   }
@@ -280,7 +281,7 @@ function getParentDeviceName(devices, parentid) {
 // Get the list of devices under the MyQ account
 function getDeviceList() {
   try {
-    if (config.devices) {
+    if (config.devices && Array.isArray(config.devices) && config.devices.length > 0) {
       if (DEBUG) console.log("Getting SAVED device list");
       var deviceids = [];
       // If device list has been saved, just build C-style array of device IDs for passing to the Pebble
@@ -305,18 +306,25 @@ function getDeviceList() {
                        config.devices = [];
                        if (data.Devices && Array.isArray(data.Devices)) {
                          for (var i = 0; i < data.Devices.length; i++) {
-                           if (data.Devices[i].TypeName && data.Devices[i].TypeName.search(/garage\s*door/i) != -1) {
-                             // Build JS array of devices
-                             config.devices.push({DeviceID: parseInt(data.Devices[i].DeviceId),
-                                                  Type: Device_Type.GarageDoor,
-                                                  Location: getParentDeviceName(data.Devices, data.Devices[i].ParentMyQDeviceId),
-                                                  Name: getAttrVal(data.Devices[i], "desc"),
-                                                  Status: parseInt(getAttrVal(data.Devices[i], "doorstate")),
-                                                  StatusUpdated: new Date(),
-                                                  StatusChanged: getAttrUpdatedTime(data.Devices[i], "doorstate")});
-  
-                             // Build C-style array of device IDs for passing to the Pebble
-                             deviceids.push(to4Byte(parseInt(data.Devices[i].DeviceId)));
+                           if (data.Devices[i].DeviceId && data.Devices[i].TypeName) {
+                             // MyQ Garage Door openers have "garage door" in the TypeName
+                             // "MyQ Garage" devices for 3rd party devices have VGDO in the TypeName and a 
+                             //  'oemtransmitter' attribute value that is not 255 (filters out the duplicate)
+                             if (data.Devices[i].TypeName.search(/garage\s*door/i) != -1 || 
+                                 (data.Devices[i].TypeName.search(/gdo/i) != -1 &&
+                                       getAttrVal(data.Devices[i], "oemtransmitter") != 255)) {
+                               // Add Garage Door Openers devices to JS array
+                               config.devices.push({DeviceID: parseInt(data.Devices[i].DeviceId),
+                                                    Type: Device_Type.GarageDoor,
+                                                    Location: getParentDeviceName(data.Devices, data.Devices[i].ParentMyQDeviceId),
+                                                    Name: getAttrVal(data.Devices[i], "desc"),
+                                                    Status: parseInt(getAttrVal(data.Devices[i], "doorstate")),
+                                                    StatusUpdated: new Date(),
+                                                    StatusChanged: getAttrUpdatedTime(data.Devices[i], "doorstate")});
+    
+                               // Build C-style array of device IDs for passing to the Pebble
+                               deviceids.push(to4Byte(parseInt(data.Devices[i].DeviceId)));
+                             }
                            }
                          }
                        } 
@@ -641,7 +649,7 @@ Pebble.addEventListener("showConfiguration",
 		<fieldset>\
 			<input type="button" value="Login" style="font-size: larger;" onclick="login(false);" />\
 			<input type="button" value="Refresh Devices" style="font-size: larger;" onclick="login(true);" />\
-			<div style="float: right; font-size: xx-small;">v1.0</div>\
+			<div style="float: right; font-size: xx-small;">v1.1</div>\
 		</fieldset>\
 </body>\
 </html><!--.html'; // Open .html comment is for some versions of Android to show this correctly

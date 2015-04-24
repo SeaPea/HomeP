@@ -15,6 +15,7 @@ static void get_status_desc(DeviceType device_type, DeviceStatus status, char *s
       strcpy(status_desc, "Updating...");
       break;
     case DSOnOpen:
+    case DSVGDOOpen:
       switch (device_type) {
         case DTGarageDoor:
         case DTGate:
@@ -125,6 +126,7 @@ static void devicecard_layer_update_proc(Layer *layer, GContext *ctx) {
     
       switch (devicecard_layer->status) {
         case DSOnOpen:
+        case DSVGDOOpen:
           device_icon = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_GARAGE_OPEN);
           break;
         case DSOffClosed:

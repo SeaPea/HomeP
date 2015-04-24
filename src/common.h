@@ -22,7 +22,8 @@ typedef enum DeviceStatus {
   DSOnOpen = 1,
   DSOffClosed = 2,
   DSOpening = 4,
-  DSClosing = 5
+  DSClosing = 5,
+  DSVGDOOpen = 9
 } DeviceStatus;
 
 // Global variables

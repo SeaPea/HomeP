@@ -123,7 +123,7 @@ void device_status_fetched(int device_id, DeviceStatus status, char *status_chan
       // If expecting the device status to change (e.g. Garage door opening/closing)
       cancel_status_check();
       
-      if (status != s_device_status_target) {
+      if (((status == DSVGDOOpen) ? DSOnOpen : status) != s_device_status_target) {
         APP_LOG(APP_LOG_LEVEL_DEBUG, "Status still not reached target, checking again in 2 seconds...");
         // Still not reached target status, so check again after 2 seconds
         status_change_check_timer = app_timer_register(2000, status_change_check, NULL);
@@ -168,6 +168,7 @@ void device_status_change() {
   reset_inactivity_timer();
   switch (s_device_status) {
     case DSOnOpen:
+    case DSVGDOOpen:
       s_device_status_target = DSOffClosed;
       show_device_status(DSClosing, "");
       break;
