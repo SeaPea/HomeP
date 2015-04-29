@@ -145,7 +145,7 @@ function getData(url, success, error) {
   };
   
   // Start 45 second timeout for HTTP request
-  timeout = setTimeout(function() { error("Server communication timed out"); }, 45000);
+  timeout = setTimeout(function() { req.abort(); error("Server communication timed out"); }, 45000);
   
   req.open("GET", url, true);
   req.send();
@@ -172,7 +172,7 @@ function putData(url, data, success, error) {
   };
   
   // Start 45 seconds timeout for HTTP request
-  timeout = setTimeout(function() { error("Server communication timed out"); }, 45000);
+  timeout = setTimeout(function() { req.abort(); error("Server communication timed out"); }, 45000);
   
   if (DEBUG) console.log("Putting data: " + JSON.stringify(data));
   req.open("PUT", url, true);
@@ -197,8 +197,8 @@ function login(success, param, error) {
         loginCount++;
         
         getData(WS_URL_Login.replace("{username}", 
-                                     config.username).replace("{password}",
-                                                              decrypt(config.password)),
+                                     encodeURIComponent(config.username)).replace("{password}",
+                                                              encodeURIComponent(decrypt(config.password))),
                function(data) {
                  // HTTP success
                  if (data.ReturnCode) {
@@ -294,7 +294,7 @@ function getDeviceList() {
       if (DEBUG) console.log("Getting LATEST device list");
       // Else fetch the latest device list from the MyQ server
       if (haveValidToken()) {
-        getData(WS_URL_Device_List.replace("{securityToken}", config.token),
+        getData(WS_URL_Device_List.replace("{securityToken}", encodeURIComponent(config.token)),
                function(data) {
                  // HTTP Success
                  if (data.ReturnCode) {
@@ -393,9 +393,9 @@ function getDeviceStatus(deviceID) {
           
           if (attrName) {
             getData(WS_URL_Device_GetAttr.replace("{securityToken}", 
-                                                 config.token).replace("{deviceId}", 
+                                                 encodeURIComponent(config.token)).replace("{deviceId}", 
                                                                        deviceID).replace("{attrName}", 
-                                                                                                attrName),
+                                                                                    encodeURIComponent(attrName)),
                    function(data) {
                      // HTTP Success
                      if (data.ReturnCode) {
@@ -535,7 +535,7 @@ function setDeviceStatus(params) {
 
 // Initialize app
 function init() {
-  if (!config.username || !config.password) {
+  if (!config.username || !config.password || !decrypt(config.password)) {
     Pebble.sendAppMessage({"function_key": Function_Key.Error,
                            "error_message": "Enter both a username and password in the HomeP settings on your phone."});
   } else {
@@ -649,7 +649,7 @@ Pebble.addEventListener("showConfiguration",
 		<fieldset>\
 			<input type="button" value="Login" style="font-size: larger;" onclick="login(false);" />\
 			<input type="button" value="Refresh Devices" style="font-size: larger;" onclick="login(true);" />\
-			<div style="float: right; font-size: xx-small;">v1.1</div>\
+			<div style="float: right; font-size: xx-small;">v1.2</div>\
 		</fieldset>\
 </body>\
 </html><!--.html'; // Open .html comment is for some versions of Android to show this correctly
