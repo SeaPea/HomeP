@@ -1,4 +1,5 @@
 var DEBUG = false;
+var version = 'v1.3';
 
 /* Credit goes to https://github.com/pfeffed/liftmaster_myq for figuring out 
  * all the MyQ WebService URLs and parameters
@@ -43,6 +44,7 @@ var Device_Status = {
 var salt = "WgGF^*(@!GJEK0fkjGIfy*&*^#&*TJKSFJK357HFQWYFF761YFPSDYbsnabMNBC&*";
 var failCount = 0;
 var loginCount = 0;
+var raw_devices = "";
 
 // Config object that is saved in localStorage (Password is encrypted with AES)
 var config = {username: "", password: "", token: "", sessionStart: null, devices: null};
@@ -301,17 +303,18 @@ function getDeviceList() {
                    switch (data.ReturnCode) {
                      case "0":
                        // Parse MyQ device list
+                       raw_devices = JSON.stringify(data);
                        var deviceids = [];
                        config.sessionStart = new Date();
                        config.devices = [];
                        if (data.Devices && Array.isArray(data.Devices)) {
                          for (var i = 0; i < data.Devices.length; i++) {
                            if (data.Devices[i].DeviceId && data.Devices[i].TypeName) {
-                             // MyQ Garage Door openers have "garage door" in the TypeName
-                             // "MyQ Garage" devices for 3rd party devices have VGDO in the TypeName and a 
+                             // MyQ Garage Door openers have "garage door" in the TypeName or TypeID of 47.
+                             // "MyQ Garage" devices for 3rd party devices have VGDO in the TypeName or TypeID of 259 and a 
                              //  'oemtransmitter' attribute value that is not 255 (filters out the duplicate)
-                             if (data.Devices[i].TypeName.search(/garage\s*door/i) != -1 || 
-                                 (data.Devices[i].TypeName.search(/gdo/i) != -1 &&
+                             if (data.Devices[i].TypeName.search(/garage\s*door/i) != -1 || data.Devices[i].TypeId == 47 ||
+                                 ((data.Devices[i].TypeName.search(/gdo/i) != -1 || data.Devices[i].TypeId == 259) &&
                                        getAttrVal(data.Devices[i], "oemtransmitter") != 255)) {
                                // Add Garage Door Openers devices to JS array
                                config.devices.push({DeviceID: parseInt(data.Devices[i].DeviceId),
@@ -649,10 +652,21 @@ Pebble.addEventListener("showConfiguration",
 		<fieldset>\
 			<input type="button" value="Login" style="font-size: larger;" onclick="login(false);" />\
 			<input type="button" value="Refresh Devices" style="font-size: larger;" onclick="login(true);" />\
-			<div style="float: right; font-size: xx-small;">v1.2</div>\
-		</fieldset>\
-</body>\
-</html><!--.html'; // Open .html comment is for some versions of Android to show this correctly
+			<div style="float: right; font-size: xx-small;">' + version + '</div>\
+		</fieldset><br>\
+		<fieldset>\
+			<label>Raw Device Data:</label>\
+			<p>If "No devices found" or "Unknown device" is displayed on your watch and you have used the correct username and password above and tapped <b>Refresh Devices</b>, then the raw device data will need to be examined to determine the cause.</p>';
+      
+      if (!raw_devices) {
+        html += '<p>To get the raw device data, tap <b>Refresh Devices</b> (which will close these settings), wait for the watchapp to finish updating and then come back to the HomeP settings while keeping the HomeP watch app open. If this message does not change, then the device data is not being retrieved at all - Check your username and password and make sure it is working in the MyQ phone app or website and try again.</p>';
+      } else {
+			  html += '<p>Tap <b>Show Raw Device Data</b> and then select and copy all the text in the box below and paste it into the email started by going to the HomeP Pebble app store page and selecting <i>Email Developer for Support</i> (Or find the HomeP thread on the Pebble forums and PM the data to the developer - DO NOT post the raw data to public forums)</p>\
+			<p><input type="button" value="Show Raw Device Data" style="font-size: larger;" onclick="document.getElementById(&#39;rawdevicedata&#39;).style.display = &#39;block&#39;;" /></p>\
+			<div id="rawdevicedata" style="display: none;"><textarea rows="4" cols="40">' + raw_devices.replace(/"[^"@]+@[^"@]+\.[^"@]+"/g, '""') + '</textarea></div>\
+		</fieldset>';
+      }
+      html += '</body></html><!--.html'; // Open .html comment is for some versions of Android to show this correctly
                            
                            // Open above HTML as a Data URI
                            Pebble.openURL("data:text/html," + encodeURIComponent(html));
