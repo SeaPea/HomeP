@@ -1,5 +1,5 @@
 var DEBUG = false;
-var version = 'v1.3';
+var version = 'v1.4';
 
 /* Credit goes to https://github.com/pfeffed/liftmaster_myq for figuring out 
  * all the MyQ WebService URLs and parameters
@@ -272,7 +272,7 @@ function getAttrUpdatedTime(device, name) {
 function getParentDeviceName(devices, parentid) {
   if (devices && Array.isArray(devices)) {
     for (var i = 0; i < devices.length; i++) {
-      if (devices[i].MyQDeviceId == parentid) return getAttrVal(devices[i], "desc");
+      if (devices[i].DeviceId == parentid) return getAttrVal(devices[i], "desc");
     }
     return "";
   } else {
@@ -309,17 +309,19 @@ function getDeviceList() {
                        config.devices = [];
                        if (data.Devices && Array.isArray(data.Devices)) {
                          for (var i = 0; i < data.Devices.length; i++) {
-                           if (data.Devices[i].DeviceId && data.Devices[i].TypeName) {
+                           if (data.Devices[i].DeviceId && (data.Devices[i].TypeName || data.Devices[i].TypeId)) {
                              // MyQ Garage Door openers have "garage door" in the TypeName or TypeID of 47.
                              // "MyQ Garage" devices for 3rd party devices have VGDO in the TypeName or TypeID of 259 and a 
                              //  'oemtransmitter' attribute value that is not 255 (filters out the duplicate)
-                             if (data.Devices[i].TypeName.search(/garage\s*door/i) != -1 || data.Devices[i].TypeId == 47 ||
-                                 ((data.Devices[i].TypeName.search(/gdo/i) != -1 || data.Devices[i].TypeId == 259) &&
+                             if ((data.Devices[i].TypeName && data.Devices[i].TypeName.search(/garage\s*door/i) != -1) || 
+                                 (data.Devices[i].TypeId && data.Devices[i].TypeId == 47) ||
+                                 (((data.Devices[i].TypeName && data.Devices[i].TypeName.search(/gdo/i) != -1) || 
+                                    (data.Devices[i].TypeId && data.Devices[i].TypeId == 259)) &&
                                        getAttrVal(data.Devices[i], "oemtransmitter") != 255)) {
                                // Add Garage Door Openers devices to JS array
                                config.devices.push({DeviceID: parseInt(data.Devices[i].DeviceId),
                                                     Type: Device_Type.GarageDoor,
-                                                    Location: getParentDeviceName(data.Devices, data.Devices[i].ParentMyQDeviceId),
+                                                    Location: getParentDeviceName(data.Devices, getAttrVal(data.Devices[i], "gatewayID")),
                                                     Name: getAttrVal(data.Devices[i], "desc"),
                                                     Status: parseInt(getAttrVal(data.Devices[i], "doorstate")),
                                                     StatusUpdated: new Date(),
