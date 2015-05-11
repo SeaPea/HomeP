@@ -1,5 +1,5 @@
 var DEBUG = false;
-var version = 'v1.4';
+var version = 'v1.5';
 
 /* Credit goes to https://github.com/pfeffed/liftmaster_myq for figuring out 
  * all the MyQ WebService URLs and parameters
@@ -49,9 +49,12 @@ var raw_devices = "";
 // Config object that is saved in localStorage (Password is encrypted with AES)
 var config = {username: "", password: "", token: "", sessionStart: null, devices: null};
 
-// Convert int value to 4 Byte charater string with the same underlying bits
-function to4Byte(value) {
-  return String.fromCharCode(value&0xff, (value>>8)&0xff, (value>>16)&0xff, (value>>24)&0xff);
+// Add an int as 4 bytes to an existing byte array to pass a c-style array to the Pebble
+function appendInt32(byteArray, value) {
+  byteArray.push(value&0xff);
+  byteArray.push((value>>8)&0xff);
+  byteArray.push((value>>16)&0xff);
+  byteArray.push((value>>24)&0xff);
 }
 
 // Encrypts a string with AES (see aes.js) using Pebble account token and salt as the passphrase
@@ -85,6 +88,7 @@ function findDevice(deviceID) {
     for (var i = 0; i < config.devices.length; i++) {
       if (config.devices[i].DeviceID == deviceID) return config.devices[i];
     }
+    return null;
   } else {
     return null;
   }
@@ -288,7 +292,7 @@ function getDeviceList() {
       var deviceids = [];
       // If device list has been saved, just build C-style array of device IDs for passing to the Pebble
       for (var i = 0; i < config.devices.length; i++) {
-        deviceids.push(to4Byte(config.devices[i].DeviceID));
+        appendInt32(deviceids, config.devices[i].DeviceID);
       }
       // Send device IDs to Pebble (which will then request individual device details)
       Pebble.sendAppMessage({"function_key": Function_Key.DeviceList, "device_list": deviceids});
@@ -318,6 +322,15 @@ function getDeviceList() {
                                  (((data.Devices[i].TypeName && data.Devices[i].TypeName.search(/gdo/i) != -1) || 
                                     (data.Devices[i].TypeId && data.Devices[i].TypeId == 259)) &&
                                        getAttrVal(data.Devices[i], "oemtransmitter") != 255)) {
+                               
+                               if (DEBUG) {
+                                 console.log("Adding Garage Door - DeviceID: " + data.Devices[i].DeviceId + 
+                                             ", gatewayID: " + getAttrVal(data.Devices[i], "gatewayID") + 
+                                             ", desc: " + getAttrVal(data.Devices[i], "desc") + 
+                                             ", doortstate: " + getAttrVal(data.Devices[i], "doorstate") + 
+                                             ", stateUpdatedTime: " + getAttrUpdatedTime(data.Devices[i], "doorstate"));
+                               }
+                               
                                // Add Garage Door Openers devices to JS array
                                config.devices.push({DeviceID: parseInt(data.Devices[i].DeviceId),
                                                     Type: Device_Type.GarageDoor,
@@ -328,7 +341,7 @@ function getDeviceList() {
                                                     StatusChanged: getAttrUpdatedTime(data.Devices[i], "doorstate")});
     
                                // Build C-style array of device IDs for passing to the Pebble
-                               deviceids.push(to4Byte(parseInt(data.Devices[i].DeviceId)));
+                               appendInt32(deviceids, parseInt(data.Devices[i].DeviceId));
                              }
                            }
                          }
