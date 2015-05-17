@@ -1,5 +1,5 @@
 var DEBUG = false;
-var version = 'v1.5';
+var version = 'v1.6';
 
 /* Credit goes to https://github.com/pfeffed/liftmaster_myq for figuring out 
  * all the MyQ WebService URLs and parameters
@@ -692,7 +692,7 @@ Pebble.addEventListener("webviewclosed",
                            if (e.response) {
                              // 'Login' or 'Refresh Devices' tapped
                              if (DEBUG) console.log("Webview closed");
-                             var settings = JSON.parse(decodeURIComponent(e.response));
+                             var settings = JSON.parse(e.response);
                              // Username and Password should always be returned
                              config.username = settings.username;
                              config.password = encrypt(settings.password);
