@@ -253,7 +253,7 @@ function getAttrVal(device, name) {
     for (var i = 0; i < device.Attributes.length; i++) {
       if (device.Attributes[i].Name == name) return device.Attributes[i].Value;
     }
-    return "Attr Not Found";
+    return null;
   } else {
     return "Bad Attr";
   }
@@ -265,7 +265,7 @@ function getAttrUpdatedTime(device, name) {
     for (var i = 0; i < device.Attributes.length; i++) {
       if (device.Attributes[i].Name == name) return new Date(parseInt(device.Attributes[i].UpdatedTime));
     }
-    return "Attr Not Found";
+    return null;
   } else {
     return "Bad Attr";
   }
@@ -321,7 +321,8 @@ function getDeviceList() {
                                  (data.Devices[i].TypeId && data.Devices[i].TypeId == 47) ||
                                  (((data.Devices[i].TypeName && data.Devices[i].TypeName.search(/gdo/i) != -1) || 
                                     (data.Devices[i].TypeId && data.Devices[i].TypeId == 259)) &&
-                                       getAttrVal(data.Devices[i], "oemtransmitter") != 255)) {
+                                       getAttrVal(data.Devices[i], "oemtransmitter") != 255 &&
+                                       getAttrVal(data.Devices[i], "desc"))) {
                                
                                if (DEBUG) {
                                  console.log("Adding Garage Door - DeviceID: " + data.Devices[i].DeviceId + 

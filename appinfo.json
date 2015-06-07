@@ -75,7 +75,7 @@
     "shortName": "HomeP",
     "uuid": "40f772c3-87f6-4b8c-a480-0508421748dc",
     "versionCode": 1,
-    "versionLabel": "1.6",
+    "versionLabel": "1.7",
     "watchapp": {
         "watchface": false
     }
