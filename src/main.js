@@ -319,7 +319,8 @@ function getDeviceList() {
                              //  'oemtransmitter' attribute value that is not 255 (filters out the duplicate)
                              if ((data.Devices[i].TypeName && data.Devices[i].TypeName.search(/garage\s*door/i) != -1) || 
                                  (data.Devices[i].TypeId && data.Devices[i].TypeId == 47) ||
-                                 (((data.Devices[i].TypeName && data.Devices[i].TypeName.search(/gdo/i) != -1) || 
+                                 (((data.Devices[i].TypeName && data.Devices[i].TypeName.search(/gdo/i) != -1 && 
+                                    data.Devices[i].TypeName.search(/gateway/i) == -1) || 
                                     (data.Devices[i].TypeId && data.Devices[i].TypeId == 259)) &&
                                        getAttrVal(data.Devices[i], "oemtransmitter") != 255 &&
                                        getAttrVal(data.Devices[i], "desc"))) {
