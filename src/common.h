@@ -7,6 +7,28 @@
 #define APP_LOG(...)
 #endif
 
+#ifdef PBL_COLOR
+#define IF_COLOR(statement)   (statement)
+#define IF_BW(statement)
+#define IF_COLORBW(color, bw) (color)
+#define COLOR_SCREEN 1
+#else
+#define IF_COLOR(statement)
+#define IF_BW(statement)    (statement)
+#define IF_COLORBW(color, bw) (bw)
+#define COLOR_SCREEN 0
+#endif
+
+#ifdef PBL_SDK_2
+#define IF_32(sdk3, sdk2) (sdk2)
+#define IF_3(sdk3)
+#define IF_2(sdk2) (sdk2)
+#else
+#define IF_32(sdk3, sdk2) (sdk3)
+#define IF_3(sdk3) (sdk3)
+#define IF_2(sdk2)
+#endif
+  
 // Types of MyQ devices (not the same IDs as the MyQ JSON. Instead must match IDs in main.js)
 typedef enum DeviceType {
   DTUnknown = 0,

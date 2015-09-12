@@ -19,6 +19,16 @@
     "resources": {
         "media": [
             {
+                "file": "images/Lightbulb_On.png",
+                "name": "IMAGE_LIGHTBULB_ON",
+                "type": "png"
+            },
+            {
+                "file": "images/Lightbulb_Off.png",
+                "name": "IMAGE_LIGHTBULB_OFF",
+                "type": "png"
+            },
+            {
                 "file": "images/Garage_Step4.png",
                 "name": "IMAGE_GARAGE_STEP4",
                 "type": "png"
@@ -71,11 +81,14 @@
             }
         ]
     },
-    "sdkVersion": "2",
+    "sdkVersion": "3",
     "shortName": "HomeP",
+    "targetPlatforms": [
+        "aplite",
+        "basalt"
+    ],
     "uuid": "40f772c3-87f6-4b8c-a480-0508421748dc",
-    "versionCode": 1,
-    "versionLabel": "1.8",
+    "versionLabel": "2.0",
     "watchapp": {
         "watchface": false
     }

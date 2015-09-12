@@ -694,7 +694,12 @@ Pebble.addEventListener("webviewclosed",
                            if (e.response) {
                              // 'Login' or 'Refresh Devices' tapped
                              if (DEBUG) console.log("Webview closed");
-                             var settings = JSON.parse(e.response);
+                             var settings = null;
+                             try {
+                               settings = JSON.parse(e.response);
+                             } catch(ex) {
+                               settings = JSON.parse(decodeURIComponent(e.response));
+                             }
                              // Username and Password should always be returned
                              config.username = settings.username;
                              config.password = encrypt(settings.password);

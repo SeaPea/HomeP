@@ -93,9 +93,11 @@ static void devicecard_layer_update_proc(Layer *layer, GContext *ctx) {
   // Get reference to DeviceCardLayer and its properties
   DeviceCardLayer *devicecard_layer = (DeviceCardLayer*)(layer_get_data(layer));
   
-  // Draw Border
+  // Draw Border and background
   GRect rect = layer_get_frame(layer);
   graphics_context_set_stroke_color(ctx, GColorWhite);
+  graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_fill_rect(ctx, GRect(1, 1, rect.size.w-2, rect.size.h-2), 10, GCornersAll);
   graphics_draw_round_rect(ctx, GRect(1, 1, rect.size.w-2, rect.size.h-2), 10);
   
   graphics_context_set_text_color(ctx, GColorWhite);
@@ -161,9 +163,11 @@ static void devicecard_layer_update_proc(Layer *layer, GContext *ctx) {
       }
       
       if (device_icon != NULL) {
+        graphics_context_set_compositing_mode(ctx, GCompOpSet);
+        GRect icon_bounds = IF_32(gbitmap_get_bounds(device_icon), device_icon->bounds);
         graphics_draw_bitmap_in_rect(ctx, device_icon, 
-                                     GRect((rect.size.w/2)-(device_icon->bounds.size.w/2), 31,
-                                          device_icon->bounds.size.w, device_icon->bounds.size.h));
+                                     GRect((rect.size.w/2)-(icon_bounds.size.w/2), 31,
+                                          icon_bounds.size.w, icon_bounds.size.h));
       }
       
     

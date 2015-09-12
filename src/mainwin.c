@@ -28,15 +28,33 @@ static ActionBarLayer *s_actionbar_main;
 static Layer *s_layer_spots;
 static DeviceCardLayer *s_devicecard_layer;
 
+#ifndef PBL_SDK_2
+static StatusBarLayer *s_status_bar;
+#endif
+
 static void initialise_ui(void) {
   
   s_rect_above = GRect(16, -138, 100, 138);
-  s_rect_onscreen = GRect(16, 6, 100, 136);
+  s_rect_onscreen = GRect(16, IF_32(22, 6), 100, 136);
   s_rect_below = GRect(16, 169, 100, 138);
   
   s_window = window_create();
-  window_set_background_color(s_window, GColorBlack);
-  window_set_fullscreen(s_window, false);
+  window_set_background_color(s_window, COLOR_FALLBACK(GColorBulgarianRose, GColorBlack)); 
+  IF_2(window_set_fullscreen(s_window, false));
+  
+  // s_devicecard_layer
+  s_devicecard_layer = devicecard_layer_create(s_rect_onscreen);
+  layer_add_child(window_get_root_layer(s_window), s_devicecard_layer->layer);
+  
+  // s_layer_spots
+  s_layer_spots = layer_create(GRect(2, IF_32(23, 7), 13, 138));
+  layer_add_child(window_get_root_layer(s_window), (Layer *)s_layer_spots);
+  
+#ifndef PBL_SDK_2
+  s_status_bar = status_bar_layer_create();
+  status_bar_layer_set_colors(s_status_bar, GColorBulgarianRose, GColorWhite);
+  layer_add_child(window_get_root_layer(s_window), status_bar_layer_get_layer(s_status_bar));
+#endif
   
   s_res_image_action_up = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_ACTION_UP);
   s_res_image_action_set = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_ACTION_SET);
@@ -49,15 +67,9 @@ static void initialise_ui(void) {
   action_bar_layer_set_icon(s_actionbar_main, BUTTON_ID_UP, s_res_image_action_up);
   action_bar_layer_set_icon(s_actionbar_main, BUTTON_ID_SELECT, s_res_image_action_set);
   action_bar_layer_set_icon(s_actionbar_main, BUTTON_ID_DOWN, s_res_image_action_down);
+  layer_set_frame(action_bar_layer_get_layer(s_actionbar_main), GRect(124, 0, 20, 168));
+  IF_3(layer_set_bounds(action_bar_layer_get_layer(s_actionbar_main), GRect(-5, 0, 30, 168)));
   layer_add_child(window_get_root_layer(s_window), (Layer *)s_actionbar_main);
-  
-  // s_devicecard_layer
-  s_devicecard_layer = devicecard_layer_create(s_rect_onscreen);
-  layer_add_child(window_get_root_layer(s_window), s_devicecard_layer->layer);
-  
-  // s_layer_spots
-  s_layer_spots = layer_create(GRect(2, 7, 13, 138));
-  layer_add_child(window_get_root_layer(s_window), (Layer *)s_layer_spots);
 }
 
 static void destroy_ui(void) {
@@ -120,10 +132,12 @@ static void animate_cards(GRect *from, GRect *to) {
   s_pa_old = property_animation_create_layer_frame(s_devicecard_layer_old->layer, &s_rect_onscreen, to);
   s_pa_new = property_animation_create_layer_frame(s_devicecard_layer->layer, from, &s_rect_onscreen);
   
-  animation_set_handlers(&(s_pa_old->animation), (AnimationHandlers) {
+  animation_set_handlers(IF_32(property_animation_get_animation(s_pa_old), &(s_pa_old->animation)), 
+                         (AnimationHandlers) {
     .stopped = devicecard_anim_old_stopped
   }, NULL);
-  animation_set_handlers(&(s_pa_new->animation), (AnimationHandlers) {
+  animation_set_handlers(IF_32(property_animation_get_animation(s_pa_new), &(s_pa_new->animation)), 
+                         (AnimationHandlers) {
     .stopped = devicecard_anim_new_stopped
   }, NULL);
   

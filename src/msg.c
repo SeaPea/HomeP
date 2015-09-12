@@ -1,4 +1,5 @@
 #include "msg.h"
+#include "common.h"
 #include <pebble.h>
 
 // Simple message window that can be set not to close on the back button (modal = true)
@@ -14,7 +15,7 @@ static TextLayer *msg_layer;
 
 static void initialise_ui(void) {
   s_window = window_create();
-  window_set_fullscreen(s_window, true);
+  IF_2(window_set_fullscreen(s_window, true));
   
   s_res_gothic_24_bold = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
   // msg_layer
