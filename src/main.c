@@ -11,8 +11,9 @@ int g_device_count;
 int g_device_selected;
 
 // Static unit variables
-static DeviceStatus s_device_status_target = 0;
+static DeviceStatus s_device_status_target = DSNone;
 static DeviceStatus s_device_status = 0;
+static DeviceType s_device_type = DTUnknown;
 static char s_status_changed[20] = "";
 static AppTimer *inactivity_timer = NULL;
 static AppTimer *status_change_timeout_timer = NULL;
@@ -89,6 +90,7 @@ void device_details_fetched(int device_id, char *location, char *name, DeviceTyp
   
   if (g_device_id_list[g_device_selected] == device_id) {
     show_device_details(location, name, device_type);
+    s_device_type = device_type;
     s_device_status = DSUpdating;
     show_device_status(DSUpdating, "");
     device_status_fetch(g_device_id_list[g_device_selected]);
@@ -99,7 +101,7 @@ void device_details_fetched(int device_id, char *location, char *name, DeviceTyp
 void status_change_timeout(void *data) {
   reset_inactivity_timer();
   status_change_timeout_timer = NULL;
-  s_device_status_target = 0;
+  s_device_status_target = DSNone;
   cancel_status_check();
   show_device_status(s_device_status, s_status_changed);
   show_msg("Operation timed out", false, 5);
@@ -119,7 +121,7 @@ void device_status_fetched(int device_id, DeviceStatus status, char *status_chan
   reset_inactivity_timer();
   
   if (g_device_id_list[g_device_selected] == device_id) {
-    if (s_device_status_target != 0) {
+    if (s_device_status_target != DSNone) {
       // If expecting the device status to change (e.g. Garage door opening/closing)
       cancel_status_check();
       
@@ -131,7 +133,7 @@ void device_status_fetched(int device_id, DeviceStatus status, char *status_chan
         APP_LOG(APP_LOG_LEVEL_DEBUG, "Status has reached target");
         // Status changed, so stop checking
         cancel_timeout();
-        s_device_status_target = 0;
+        s_device_status_target = DSNone;
         s_device_status = status;
         strncpy(s_status_changed, status_changed, sizeof(s_status_changed));
         s_status_changed[sizeof(s_status_changed)-1] = '\0';
@@ -168,18 +170,27 @@ void device_status_change() {
   reset_inactivity_timer();
   switch (s_device_status) {
     case DSOnOpen:
+      switch (s_device_type) {
+        case DTLightSwitch:
+          s_device_status_target = DSOff;
+          show_device_status(DSTurningOff, "");
+          break;
+        default:
+          s_device_status_target = DSClosed;
+          show_device_status(DSClosing, "");
+          break;
+      }
+      break;
     case DSVGDOOpen:
-      s_device_status_target = DSOffClosed;
-      show_device_status(DSClosing, "");
-      break;
-    case DSOffClosed:
-      s_device_status_target = DSOnOpen;
-      show_device_status(DSOpening, "");
-      break;
     case DSOpening:
-      s_device_status_target = DSOffClosed;
+      s_device_status_target = DSClosed;
       show_device_status(DSClosing, "");
       break;
+    case DSOff:
+      s_device_status_target = DSOnOpen;
+      show_device_status(DSTurningOn, "");
+      break;
+    case DSClosed:
     case DSClosing:
       s_device_status_target = DSOnOpen;
       show_device_status(DSOpening, "");
@@ -197,21 +208,22 @@ void device_status_change() {
 // Callback for when the phone JS indicates the status change was sent to the MyQ server
 void device_status_change_sent(int device_id) {
   reset_inactivity_timer();
-  if (s_device_status_target != 0 && g_device_id_list[g_device_selected] == device_id) {
+  if (s_device_status_target != DSNone && g_device_id_list[g_device_selected] == device_id) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Status change sent. Checking for status updates...");
     // Start checking for the status reaching the target 
     // (For garage doors, wait 10 seconds before first check due to how long it take)
+    int first_check = (s_device_type == DTLightSwitch) ? 3000 : 10000;
     if (status_change_check_timer != NULL)
-      app_timer_reschedule(status_change_check_timer, 10000);
+      app_timer_reschedule(status_change_check_timer, first_check);
     else
-      status_change_check_timer = app_timer_register(10000, status_change_check, NULL);
+      status_change_check_timer = app_timer_register(first_check, status_change_check, NULL);
   }
 }
 
 void handle_init(void) {
   g_device_id_list = NULL;
   show_mainwin();
-  show_msg("HomeP\n\nLoading...", true, 0);
+  show_msg("HomeP\n\nLogging In...", true, 0);
   comms_register_errorhandler(comms_error);
   comms_register_devicelist(device_list_fetched);
   comms_register_devicedetails(device_details_fetched);

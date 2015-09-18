@@ -39,10 +39,14 @@ typedef enum DeviceType {
 
 // MyQ device statuses (only tested with Garage Doors and negative values have been added)
 typedef enum DeviceStatus {
+  DSNone = -99,
+  DSTurningOff = -4,
+  DSTurningOn = -3,
   DSLoading = -2,
   DSUpdating = -1,
+  DSOff = 0,
   DSOnOpen = 1,
-  DSOffClosed = 2,
+  DSClosed = 2,
   DSOpening = 4,
   DSClosing = 5,
   DSVGDOOpen = 9

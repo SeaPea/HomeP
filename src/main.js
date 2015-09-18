@@ -1,5 +1,5 @@
 var DEBUG = false;
-var version = 'v1.6';
+var version = 'v2.0';
 
 /* Credit goes to https://github.com/pfeffed/liftmaster_myq for figuring out 
  * all the MyQ WebService URLs and parameters
@@ -34,8 +34,9 @@ var Device_Type = {
 
 // MyQ device status (same as MyQ Garage Door status at least)
 var Device_Status = {
+  Off: 0,
   OnOpen: 1,
-  OffClosed: 2,
+  Closed: 2,
   Opening: 4,
   Closing: 5,
   VGDOOpen: 9
@@ -344,6 +345,30 @@ function getDeviceList() {
     
                                // Build C-style array of device IDs for passing to the Pebble
                                appendInt32(deviceids, parseInt(data.Devices[i].DeviceId));
+                               
+                             } else if ((data.Devices[i].TypeName && data.Devices[i].TypeName.search(/light/i) != -1) || 
+                                 (data.Devices[i].TypeId && data.Devices[i].TypeId == 48)) {
+                               
+                               if (DEBUG) {
+                                 console.log("Adding Light Switch - DeviceID: " + data.Devices[i].DeviceId + 
+                                             ", gatewayID: " + getAttrVal(data.Devices[i], "gatewayID") + 
+                                             ", desc: " + getAttrVal(data.Devices[i], "desc") + 
+                                             ", lightstate: " + getAttrVal(data.Devices[i], "lightstate") + 
+                                             ", stateUpdatedTime: " + getAttrUpdatedTime(data.Devices[i], "lightstate"));
+                               }
+                               
+                               // Add Light Switch devices to JS array
+                               config.devices.push({DeviceID: parseInt(data.Devices[i].DeviceId),
+                                                    Type: Device_Type.LightSwitch,
+                                                    Location: getParentDeviceName(data.Devices, getAttrVal(data.Devices[i], "gatewayID")),
+                                                    Name: getAttrVal(data.Devices[i], "desc"),
+                                                    Status: parseInt(getAttrVal(data.Devices[i], "lightstate")),
+                                                    StatusUpdated: new Date(),
+                                                    StatusChanged: getAttrUpdatedTime(data.Devices[i], "lightstate")});
+    
+                               // Build C-style array of device IDs for passing to the Pebble
+                               appendInt32(deviceids, parseInt(data.Devices[i].DeviceId));
+                               
                              }
                            }
                          }
@@ -409,6 +434,8 @@ function getDeviceStatus(deviceID) {
           // Determine attribute used for this device's status
           if (device.Type == Device_Type.GarageDoor) {
             attrName = "doorstate";
+          } else if (device.Type == Device_Type.LightSwitch) {
+            attrName = "lightstate";
           }
           
           if (attrName) {
@@ -496,7 +523,10 @@ function setDeviceStatus(params) {
         if (device.Type == Device_Type.GarageDoor) {
           attrName = "desireddoorstate";
           desiredStatus = (params.Status == Device_Status.OnOpen) ? 1 : 0;
-        }
+        } else if (device.Type == Device_Type.LightSwitch) {
+          attrName = "desiredlightstate";
+          desiredStatus = (params.Status == Device_Status.OnOpen) ? 1 : 0;
+        } 
         if (attrName) {
           // Setup object for setting device attribute
           WS_SetAttr_Body.SecurityToken = config.token;
@@ -618,7 +648,7 @@ Pebble.addEventListener("appmessage",
                                 
                               case Function_Key.SetStatus:
                                 // Watch app setting device status
-                                if (e.payload.device_id && e.payload.device_status) {
+                                if (e.payload.device_id && e.payload.device_status !== null) {
                                   if (DEBUG) console.log("Setting status for ID " + e.payload.device_id + " to: " + e.payload.device_status);
                                   
                                   setDeviceStatus({DeviceID: e.payload.device_id, Status: e.payload.device_status});
@@ -678,9 +708,25 @@ Pebble.addEventListener("showConfiguration",
       if (!raw_devices) {
         html += '<p>To get the raw device data, tap <b>Refresh Devices</b> (which will close these settings), wait for the watchapp to finish updating and then come back to the HomeP settings while keeping the HomeP watch app open. If this message does not change, then the device data is not being retrieved at all - Check your username and password and make sure it is working in the MyQ phone app or website and try again.</p>';
       } else {
-			  html += '<p>Tap <b>Show Raw Device Data</b> and then select and copy all the text in the box below and paste it into the email started by going to the HomeP Pebble app store page and selecting <i>Email Developer for Support</i> (Or find the HomeP thread on the Pebble forums and PM the data to the developer - DO NOT post the raw data to public forums)</p>\
+        // Remove email address
+        var anon_devices = raw_devices.replace(/"[^"@]+@[^"@]+\.[^"@]+"/g, '""');
+        // Remove serial numbers
+        anon_devices = anon_devices.replace(/"(CG|GW)[A-Z0-9]{10}"/g, '""');
+        // Remove correlation ID
+        anon_devices = anon_devices.replace(/"CorrelationId":"[^"]+"/gi, '"CorrelationId":""');
+        // Replace Device IDs (generally between 5 and 10 digits) with unique numbers (starting at 1)
+        var reID = new RegExp("[0-9]{5,10}", "g");
+        var reNew;
+        var id, newID = 0;
+        while ((id = reID.exec(anon_devices)) !== null) {
+          reNew = new RegExp("([^0-9])" + id[0] + "([^0-9])", "g");
+          newID++;
+          anon_devices = anon_devices.replace(reNew, "$1" + newID.toString() + "$2");
+        }
+        
+			  html += '<p>Tap <b>Show Raw Device Data</b> and then select and copy all the text in the box below and paste it into the email started by going to the HomeP Pebble app store page and selecting <i>Email Developer for Support</i> (Or find the HomeP thread on the Pebble forums and PM the data to the developer - While best efforts have been made to anonymize the device data, DO NOT post the raw data to public forums)</p>\
 			<p><input type="button" value="Show Raw Device Data" style="font-size: larger;" onclick="document.getElementById(&#39;rawdevicedata&#39;).style.display = &#39;block&#39;;" /></p>\
-			<div id="rawdevicedata" style="display: none;"><textarea rows="4" cols="40">' + raw_devices.replace(/"[^"@]+@[^"@]+\.[^"@]+"/g, '""') + '</textarea></div>\
+			<div id="rawdevicedata" style="display: none;"><textarea rows="4" cols="40">' + anon_devices + '</textarea></div>\
 		</fieldset>';
       }
       html += '</body></html><!--.html'; // Open .html comment is for some versions of Android to show this correctly

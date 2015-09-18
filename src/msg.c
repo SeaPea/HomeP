@@ -15,6 +15,7 @@ static TextLayer *msg_layer;
 
 static void initialise_ui(void) {
   s_window = window_create();
+  window_set_background_color(s_window, COLOR_FALLBACK(GColorBulgarianRose, GColorBlack)); 
   IF_2(window_set_fullscreen(s_window, true));
   
   s_res_gothic_24_bold = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
@@ -23,6 +24,8 @@ static void initialise_ui(void) {
   text_layer_set_text(msg_layer, "Sent to Phone. Go to the Draw app Settings in the Pebble phone app");
   text_layer_set_text_alignment(msg_layer, GTextAlignmentCenter);
   text_layer_set_font(msg_layer, s_res_gothic_24_bold);
+  text_layer_set_text_color(msg_layer, GColorWhite);
+  text_layer_set_background_color(msg_layer, GColorClear);
   layer_add_child(window_get_root_layer(s_window), (Layer *)msg_layer);
 }
 

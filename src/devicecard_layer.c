@@ -28,24 +28,26 @@ static void get_status_desc(DeviceType device_type, DeviceStatus status, char *s
           break;
       }
       break;
-    case DSOffClosed:
-      switch (device_type) {
-        case DTGarageDoor:
-        case DTGate:
-          strcpy(status_desc, "CLOSED");
-          break;
-        case DTLightSwitch:
-          strcpy(status_desc, "OFF");
-          break;
-        default:
-          break;
-      }
+    case DSOff:
+      strcpy(status_desc, "OFF");
+      break;
+    case DSClosed:
+      strcpy(status_desc, "CLOSED");
       break;
     case DSOpening:
       strcpy(status_desc, "Opening...");
       break;
     case DSClosing:
       strcpy(status_desc, "Closing...");
+      break;
+    case DSTurningOff:
+      strcpy(status_desc, "Turning Off...");
+      break;
+    case DSTurningOn:
+      strcpy(status_desc, "Turning On...");
+      break;
+    default:
+      strcpy(status_desc, "Status Unknown");
       break;
   }
 }
@@ -131,7 +133,7 @@ static void devicecard_layer_update_proc(Layer *layer, GContext *ctx) {
         case DSVGDOOpen:
           device_icon = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_GARAGE_OPEN);
           break;
-        case DSOffClosed:
+        case DSClosed:
           device_icon = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_GARAGE_CLOSED);
           break;
         case DSOpening:
@@ -162,22 +164,40 @@ static void devicecard_layer_update_proc(Layer *layer, GContext *ctx) {
           break;
       }
       
-      if (device_icon != NULL) {
-        graphics_context_set_compositing_mode(ctx, GCompOpSet);
-        GRect icon_bounds = IF_32(gbitmap_get_bounds(device_icon), device_icon->bounds);
-        graphics_draw_bitmap_in_rect(ctx, device_icon, 
-                                     GRect((rect.size.w/2)-(icon_bounds.size.w/2), 31,
-                                          icon_bounds.size.w, icon_bounds.size.h));
-      }
-      
+      break;    
     
-      break;                
+    case DTLightSwitch:
+      
+      switch (devicecard_layer->status) {
+        case DSOnOpen:
+        case DSTurningOff:
+          device_icon = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_LIGHTBULB_ON);
+          break;
+        case DSOff:
+        case DSTurningOn:
+          device_icon = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_LIGHTBULB_OFF);
+          break;
+        default:
+          // Do not draw an icon for other statuses
+          break;
+      }
+    
+      break;
+    
     default:
-      // Only Garage Doors supported for now
+      // Only Garage Doors & Light Switches supported for now
       break;
   }
+      
+  if (device_icon != NULL) {
+    graphics_context_set_compositing_mode(ctx, GCompOpSet);
+    GRect icon_bounds = IF_32(gbitmap_get_bounds(device_icon), device_icon->bounds);
+    graphics_draw_bitmap_in_rect(ctx, device_icon, 
+                                 GRect((rect.size.w/2)-(icon_bounds.size.w/2), 31,
+                                       icon_bounds.size.w, icon_bounds.size.h));
+    gbitmap_destroy(device_icon);
+  }
   
-  if (device_icon != NULL) gbitmap_destroy(device_icon);
 }
   
 // Create DeviceCard layer

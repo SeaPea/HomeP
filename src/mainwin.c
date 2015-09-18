@@ -19,7 +19,6 @@ static PropertyAnimation *s_pa_new;
 static UIDeviceSwitchedCallback s_deviceswitched_callback;
 static UIStatusChangeCallback s_statuschange_callback;
 
-// BEGIN AUTO-GENERATED UI CODE; DO NOT MODIFY
 static Window *s_window;
 static GBitmap *s_res_image_action_up;
 static GBitmap *s_res_image_action_set;
@@ -52,7 +51,7 @@ static void initialise_ui(void) {
   
 #ifndef PBL_SDK_2
   s_status_bar = status_bar_layer_create();
-  status_bar_layer_set_colors(s_status_bar, GColorBulgarianRose, GColorWhite);
+  status_bar_layer_set_colors(s_status_bar, COLOR_FALLBACK(GColorBulgarianRose, GColorBlack), GColorWhite);
   layer_add_child(window_get_root_layer(s_window), status_bar_layer_get_layer(s_status_bar));
 #endif
   
@@ -73,7 +72,7 @@ static void initialise_ui(void) {
 }
 
 static void destroy_ui(void) {
-  window_destroy(s_window);
+  IF_3(status_bar_layer_destroy(s_status_bar));
   action_bar_layer_destroy(s_actionbar_main);
   devicecard_layer_destroy(s_devicecard_layer);
   devicecard_layer_destroy(s_devicecard_layer_old);
@@ -81,8 +80,8 @@ static void destroy_ui(void) {
   gbitmap_destroy(s_res_image_action_up);
   gbitmap_destroy(s_res_image_action_set);
   gbitmap_destroy(s_res_image_action_down);
+  window_destroy(s_window);
 }
-// END AUTO-GENERATED UI CODE
 
 // Draw the vertically stacked spots that indicate how many devices there are and which one is selected
 static void spots_draw(Layer *layer, GContext *ctx) {
