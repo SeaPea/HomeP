@@ -102,9 +102,11 @@ static void spots_draw(Layer *layer, GContext *ctx) {
 
 // Event for when the animation of the old device being switched away from finishes
 static void devicecard_anim_old_stopped(Animation *animation, bool finished, void *context) {
-  layer_remove_from_parent(s_devicecard_layer_old->layer);
-  devicecard_layer_destroy(s_devicecard_layer_old);
-  s_devicecard_layer_old = NULL;
+  if (s_devicecard_layer_old != NULL) {
+    layer_remove_from_parent(s_devicecard_layer_old->layer);
+    devicecard_layer_destroy(s_devicecard_layer_old);
+    s_devicecard_layer_old = NULL;
+  }
   property_animation_destroy((PropertyAnimation*)animation);
 }
 

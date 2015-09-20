@@ -307,7 +307,7 @@ void device_details_fetch(int device_id) {
   if (iter == NULL) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Send iter is NULL");
     char msg[100];
-    snprintf(msg, sizeof(msg), "Device list comms error: %d. Please restart app.", result);
+    snprintf(msg, sizeof(msg), "Device details comms error: %d. Please restart app.", result);
     show_error(msg);
     return;
   }
@@ -333,7 +333,7 @@ void device_status_fetch(int device_id) {
   if (iter == NULL) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Send iter is NULL - Result: %d", result);
     char msg[100];
-    snprintf(msg, sizeof(msg), "Device list comms error: %d. Please restart app.", result);
+    snprintf(msg, sizeof(msg), "Device status fetch comms error: %d. Please restart app.", result);
     show_error(msg);
     return;
   }
@@ -360,7 +360,7 @@ void device_status_set(int device_id, DeviceStatus status) {
   if (iter == NULL) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Send iter is NULL");
     char msg[100];
-    snprintf(msg, sizeof(msg), "Device list comms error: %d. Please restart app.", result);
+    snprintf(msg, sizeof(msg), "Device status set comms error: %d. Please restart app.", result);
     show_error(msg);
     return;
   }

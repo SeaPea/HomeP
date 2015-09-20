@@ -18,6 +18,8 @@ static char s_status_changed[20] = "";
 static AppTimer *inactivity_timer = NULL;
 static AppTimer *status_change_timeout_timer = NULL;
 static AppTimer *status_change_check_timer = NULL;
+static AppTimer *details_fetch_delay_timer = NULL;
+static AppTimer *status_fetch_delay_timer = NULL;
 
 // Close the app after a period of inactivity (to prevent accidentally operating devices)
 void inactivity_timeout(void *data) {
@@ -82,6 +84,12 @@ void device_list_fetched() {
   }
 }
 
+// Timer event called to fetch device status after a brief delay to avoid busy comms error
+void status_fetch_delayed(void *data) {
+  status_fetch_delay_timer = NULL;
+  device_status_fetch(g_device_id_list[g_device_selected]);
+}
+
 // Callback for when device details have been fetched
 void device_details_fetched(int device_id, char *location, char *name, DeviceType device_type) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Details fetched - ID: %d, Location: %s, Name: %s, DeviceType: %d", 
@@ -93,7 +101,11 @@ void device_details_fetched(int device_id, char *location, char *name, DeviceTyp
     s_device_type = device_type;
     s_device_status = DSUpdating;
     show_device_status(DSUpdating, "");
-    device_status_fetch(g_device_id_list[g_device_selected]);
+    // Fetch device status after a brief delay to avoid busy comms error
+    if (status_fetch_delay_timer == NULL)
+      status_fetch_delay_timer = app_timer_register(100, status_fetch_delayed, NULL);
+    else
+      app_timer_reschedule(status_fetch_delay_timer, 100);
   }
 }
 
@@ -157,12 +169,25 @@ void device_status_fetched(int device_id, DeviceStatus status, char *status_chan
   }
 }
 
+void device_details_fetch_delayed(void *data) {
+  details_fetch_delay_timer = NULL;
+  device_details_fetch(g_device_id_list[g_device_selected]);
+}
+
 // Callback for when user switches between devices
 void device_switched() {
   reset_inactivity_timer();
   cancel_status_check();
   cancel_timeout();
-  device_details_fetch(g_device_id_list[g_device_selected]);
+  if (status_fetch_delay_timer != NULL) {
+    app_timer_cancel(status_fetch_delay_timer);
+    status_fetch_delay_timer = NULL;
+  }
+  // Fetch device details after a brief delay to avoid busy comms error
+  if (details_fetch_delay_timer == NULL)
+    details_fetch_delay_timer = app_timer_register(500, device_details_fetch_delayed, NULL);
+  else
+    app_timer_reschedule(details_fetch_delay_timer, 500);
 }
 
 // Callback when user indicates status should be changed
