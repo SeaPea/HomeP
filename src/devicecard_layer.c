@@ -190,7 +190,7 @@ static void devicecard_layer_update_proc(Layer *layer, GContext *ctx) {
   }
       
   if (device_icon != NULL) {
-    graphics_context_set_compositing_mode(ctx, GCompOpSet);
+    IF_COLOR(graphics_context_set_compositing_mode(ctx, GCompOpSet));
     GRect icon_bounds = IF_32(gbitmap_get_bounds(device_icon), device_icon->bounds);
     graphics_draw_bitmap_in_rect(ctx, device_icon, 
                                  GRect((rect.size.w/2)-(icon_bounds.size.w/2), 31,
