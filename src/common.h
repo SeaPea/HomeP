@@ -28,7 +28,12 @@
 #define IF_3(sdk3) (sdk3)
 #define IF_2(sdk2)
 #endif
-  
+
+#ifdef PBL_RECT
+#undef ACTION_BAR_WIDTH
+#define ACTION_BAR_WIDTH 20
+#endif
+
 // Types of MyQ devices (not the same IDs as the MyQ JSON. Instead must match IDs in main.js)
 typedef enum DeviceType {
   DTUnknown = 0,

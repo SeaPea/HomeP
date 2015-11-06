@@ -10,6 +10,14 @@
 #define SPOT_RADIUS 3
 #define SPOT_SPACING 4
 
+#ifdef PBL_ROUND
+#define DEV_LAYER_HEIGHT 148
+#define DEV_LAYER_WIDTH 148
+#else
+#define DEV_LAYER_HEIGHT 136
+#define DEV_LAYER_WIDTH 100
+#endif
+
 static DeviceCardLayer *s_devicecard_layer_old;
 static GRect s_rect_above;
 static GRect s_rect_onscreen;
@@ -33,26 +41,37 @@ static StatusBarLayer *s_status_bar;
 
 static void initialise_ui(void) {
   
-  s_rect_above = GRect(16, -138, 100, 138);
-  s_rect_onscreen = GRect(16, IF_32(22, 6), 100, 136);
-  s_rect_below = GRect(16, 169, 100, 138);
-  
   s_window = window_create();
+  Layer *root_layer = window_get_root_layer(s_window);
+  GRect bounds = layer_get_bounds(root_layer); 
   window_set_background_color(s_window, COLOR_FALLBACK(GColorBulgarianRose, GColorBlack)); 
   IF_2(window_set_fullscreen(s_window, false));
   
+#ifdef PBL_ROUND
+  int dev_layer_left = (bounds.size.w - DEV_LAYER_WIDTH)/2;
+  int dev_layer_top = (bounds.size.h - DEV_LAYER_HEIGHT)/2;
+#else
+  int dev_layer_left = ((bounds.size.w - DEV_LAYER_WIDTH - ACTION_BAR_WIDTH)/2) + 4;
+  int dev_layer_top = ((bounds.size.h - DEV_LAYER_HEIGHT - 14)/2) + IF_32(14, 0);
+#endif
+  
+  s_rect_above = GRect(dev_layer_left, -(DEV_LAYER_HEIGHT+2), DEV_LAYER_WIDTH, DEV_LAYER_HEIGHT);
+  s_rect_onscreen = GRect(dev_layer_left, dev_layer_top, DEV_LAYER_WIDTH, DEV_LAYER_HEIGHT);
+  s_rect_below = GRect(dev_layer_left, bounds.size.h+2, DEV_LAYER_WIDTH, DEV_LAYER_HEIGHT);
+  
   // s_devicecard_layer
   s_devicecard_layer = devicecard_layer_create(s_rect_onscreen);
-  layer_add_child(window_get_root_layer(s_window), s_devicecard_layer->layer);
+  layer_add_child(root_layer, s_devicecard_layer->layer);
   
   // s_layer_spots
-  s_layer_spots = layer_create(GRect(2, IF_32(23, 7), 13, 138));
-  layer_add_child(window_get_root_layer(s_window), (Layer *)s_layer_spots);
+  s_layer_spots = layer_create(PBL_IF_RECT_ELSE(GRect((dev_layer_left/2)-SPOT_RADIUS, dev_layer_top, 
+                                                (SPOT_RADIUS*2)+1 , DEV_LAYER_HEIGHT), bounds));
+  layer_add_child(root_layer, (Layer *)s_layer_spots);
   
 #ifndef PBL_SDK_2
   s_status_bar = status_bar_layer_create();
   status_bar_layer_set_colors(s_status_bar, COLOR_FALLBACK(GColorBulgarianRose, GColorBlack), GColorWhite);
-  layer_add_child(window_get_root_layer(s_window), status_bar_layer_get_layer(s_status_bar));
+  layer_add_child(root_layer, status_bar_layer_get_layer(s_status_bar));
 #endif
   
   s_res_image_action_up = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_ACTION_UP);
@@ -66,9 +85,11 @@ static void initialise_ui(void) {
   action_bar_layer_set_icon(s_actionbar_main, BUTTON_ID_UP, s_res_image_action_up);
   action_bar_layer_set_icon(s_actionbar_main, BUTTON_ID_SELECT, s_res_image_action_set);
   action_bar_layer_set_icon(s_actionbar_main, BUTTON_ID_DOWN, s_res_image_action_down);
-  layer_set_frame(action_bar_layer_get_layer(s_actionbar_main), GRect(124, 0, 20, 168));
-  IF_3(layer_set_bounds(action_bar_layer_get_layer(s_actionbar_main), GRect(-5, 0, 30, 168)));
-  layer_add_child(window_get_root_layer(s_window), (Layer *)s_actionbar_main);
+#ifdef PBL_RECT
+  layer_set_frame(action_bar_layer_get_layer(s_actionbar_main), GRect(bounds.size.w-20, 0, 20, bounds.size.h));
+  IF_3(layer_set_bounds(action_bar_layer_get_layer(s_actionbar_main), GRect(-5, 0, 30, bounds.size.h)));
+#endif
+  layer_add_child(root_layer, (Layer *)s_actionbar_main);
 }
 
 static void destroy_ui(void) {
@@ -90,9 +111,19 @@ static void spots_draw(Layer *layer, GContext *ctx) {
   graphics_context_set_fill_color(ctx, GColorWhite);
   
   for (int y = 0; y < g_device_count; y++) {
-    GPoint spot = GPoint((rect.size.w/2)+1,
+#ifdef PBL_ROUND
+    GPoint spot = gpoint_from_polar(GRect(rect.origin.x+((rect.size.w-DEV_LAYER_WIDTH)/4),
+                                          rect.origin.y+((rect.size.h-DEV_LAYER_HEIGHT)/4),
+                                          rect.size.w-((rect.size.w-DEV_LAYER_WIDTH)/2),
+                                          rect.size.h-((rect.size.h-DEV_LAYER_HEIGHT)/2)), GOvalScaleModeFitCircle, 
+                                   DEG_TO_TRIGANGLE(270+
+                                      ((((SPOT_RADIUS*2)*g_device_count)+(SPOT_SPACING*(g_device_count-1)))/2) -
+                                       (y*((SPOT_RADIUS*2)+SPOT_SPACING)+3)));
+#else
+    GPoint spot = GPoint((rect.size.w/2),
                                      (rect.size.h/2)-((((SPOT_RADIUS*2)*g_device_count)+(SPOT_SPACING*(g_device_count-1)))/2) +
                                      (y*((SPOT_RADIUS*2)+SPOT_SPACING)+3));
+#endif
     if (g_device_selected == y)
       graphics_fill_circle(ctx, spot, SPOT_RADIUS);
     else
@@ -159,7 +190,15 @@ static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
   
   s_devicecard_layer_old = s_devicecard_layer;
   s_devicecard_layer = devicecard_layer_create(s_rect_above);
-  layer_add_child(window_get_root_layer(s_window), s_devicecard_layer->layer);
+  Layer *root_layer = window_get_root_layer(s_window);
+  layer_add_child(root_layer, s_devicecard_layer->layer);
+  // Put statusbar and actionbar back on top
+#ifndef PBL_SDK_2
+  layer_remove_from_parent((Layer *)s_status_bar);
+  layer_add_child(root_layer, (Layer *)s_status_bar);
+#endif
+  layer_remove_from_parent((Layer *)s_actionbar_main);
+  layer_add_child(root_layer, (Layer *)s_actionbar_main);
   init_card();
   
   // Let main unit know device has been switched
@@ -175,7 +214,15 @@ static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
   
   s_devicecard_layer_old = s_devicecard_layer;
   s_devicecard_layer = devicecard_layer_create(s_rect_below);
-  layer_add_child(window_get_root_layer(s_window), s_devicecard_layer->layer);
+  Layer *root_layer = window_get_root_layer(s_window);
+  layer_add_child(root_layer, s_devicecard_layer->layer);
+  // Put statusbar and actionbar back on top
+#ifndef PBL_SDK_2
+  layer_remove_from_parent((Layer *)s_status_bar);
+  layer_add_child(root_layer, (Layer *)s_status_bar);
+#endif
+  layer_remove_from_parent((Layer *)s_actionbar_main);
+  layer_add_child(root_layer, (Layer *)s_actionbar_main);
   init_card();
   
   // Let main unit know device has been switched

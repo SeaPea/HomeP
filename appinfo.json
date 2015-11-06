@@ -85,10 +85,11 @@
     "shortName": "HomeP",
     "targetPlatforms": [
         "aplite",
-        "basalt"
+        "basalt",
+        "chalk"
     ],
     "uuid": "40f772c3-87f6-4b8c-a480-0508421748dc",
-    "versionLabel": "2.1",
+    "versionLabel": "2.2",
     "watchapp": {
         "watchface": false
     }

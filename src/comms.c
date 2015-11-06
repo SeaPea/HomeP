@@ -247,7 +247,8 @@ void init_comms() {
   app_message_register_outbox_sent(outbox_sent_callback);
 
   // Open App Message
-  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+  app_message_open((app_message_inbox_size_maximum() < 2048 ? app_message_inbox_size_maximum() : 2048), 
+                   APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
 }
 
 void comms_register_errorhandler(CommsErrorCallback callback) {

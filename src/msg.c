@@ -8,32 +8,35 @@ static bool s_modal = false;
 static char s_msg[100];
 static AppTimer *s_autohide = NULL;
   
-// BEGIN AUTO-GENERATED UI CODE; DO NOT MODIFY
 static Window *s_window;
 static GFont s_res_gothic_24_bold;
 static TextLayer *msg_layer;
 
 static void initialise_ui(void) {
   s_window = window_create();
+  Layer *root_layer = window_get_root_layer(s_window);
+  GRect bounds = layer_get_bounds(root_layer); 
   window_set_background_color(s_window, COLOR_FALLBACK(GColorBulgarianRose, GColorBlack)); 
   IF_2(window_set_fullscreen(s_window, true));
   
   s_res_gothic_24_bold = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
   // msg_layer
-  msg_layer = text_layer_create(GRect(6, 21, 133, 125));
+  msg_layer = text_layer_create(GRect(6, 12, bounds.size.w-12, bounds.size.h-24));
   text_layer_set_text(msg_layer, "Sent to Phone. Go to the Draw app Settings in the Pebble phone app");
   text_layer_set_text_alignment(msg_layer, GTextAlignmentCenter);
   text_layer_set_font(msg_layer, s_res_gothic_24_bold);
   text_layer_set_text_color(msg_layer, GColorWhite);
   text_layer_set_background_color(msg_layer, GColorClear);
-  layer_add_child(window_get_root_layer(s_window), (Layer *)msg_layer);
+  layer_add_child(root_layer, (Layer *)msg_layer);
+#ifdef PBL_ROUND
+  text_layer_enable_screen_text_flow_and_paging(msg_layer, 2);
+#endif
 }
 
 static void destroy_ui(void) {
   window_destroy(s_window);
   text_layer_destroy(msg_layer);
 }
-// END AUTO-GENERATED UI CODE
 
 static void handle_window_unload(Window* window) {
   destroy_ui();

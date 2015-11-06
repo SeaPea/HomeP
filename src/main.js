@@ -1,5 +1,6 @@
 var DEBUG = false;
-var version = 'v2.1';
+var SIMULATE = false;
+var version = 'v2.2';
 
 /* Credit goes to https://github.com/pfeffed/liftmaster_myq for figuring out 
  * all the MyQ WebService URLs and parameters
@@ -299,6 +300,37 @@ function getDeviceList() {
       Pebble.sendAppMessage({"function_key": Function_Key.DeviceList, "device_list": deviceids});
     } else {
       if (DEBUG) console.log("Getting LATEST device list");
+      
+      // If simulating, build fake list of devices and return that
+      if (SIMULATE) {
+        config.devices = [];
+        var updated = new Date((new Date()).getTime() - (30 * 60000));
+        config.devices.push({DeviceID: 1, Type: Device_Type.GarageDoor, Location: "Home", Name: "Garage Door 1",
+                             Status: Device_Status.Closed, StatusUpdated: new Date(), StatusChanged: updated});
+        config.devices.push({DeviceID: 2, Type: Device_Type.GarageDoor, Location: "Home", Name: "Garage Door 2",
+                             Status: Device_Status.Closed, StatusUpdated: new Date(), StatusChanged: updated});
+        config.devices.push({DeviceID: 3, Type: Device_Type.LightSwitch, Location: "Home", Name: "Hall",
+                             Status: Device_Status.Off, StatusUpdated: new Date(), StatusChanged: updated});
+        config.devices.push({DeviceID: 4, Type: Device_Type.LightSwitch, Location: "Home", Name: "Side Door",
+                             Status: Device_Status.Off, StatusUpdated: new Date(), StatusChanged: updated});
+        config.devices.push({DeviceID: 5, Type: Device_Type.GarageDoor, Location: "Holiday Home", Name: "Garage Door",
+                             Status: Device_Status.Closed, StatusUpdated: new Date(), StatusChanged: updated});
+
+        var ids = [];
+
+        // Build C-style array of device IDs for passing to the Pebble
+        appendInt32(ids, 1);
+        appendInt32(ids, 2);
+        appendInt32(ids, 3);
+        appendInt32(ids, 4);
+        appendInt32(ids, 5);
+
+        // Send FAKE device IDs to Pebble during simulation (which will then request individual device details)
+        Pebble.sendAppMessage({"function_key": Function_Key.DeviceList, "device_list": ids});
+
+        return;
+      }
+      
       // Else fetch the latest device list from the MyQ server
       if (haveValidToken()) {
         getData(WS_URL_Device_List.replace("{securityToken}", encodeURIComponent(config.token)),
@@ -419,9 +451,14 @@ function getDeviceStatus(deviceID) {
     var device = findDevice(deviceID);
     
     if (device) {
-      if (((new Date()) - device.StatusUpdated) < 2000) {
-        // If the device status is less that 2 seconds old, return the saved status
-        if (DEBUG) console.log("Status LESS than 2 seconds old. Returning save status");
+      if (((new Date()) - device.StatusUpdated) < 2000 || SIMULATE) {
+        // If the device status is less that 2 seconds old or SIMULATING, return the saved status
+        if (DEBUG) {
+          if (SIMULATE)
+            console.log("Simulating. Returning fake status");
+          else
+            console.log("Status LESS than 2 seconds old. Returning save status");
+        } 
         Pebble.sendAppMessage({"function_key": Function_Key.GetStatus, 
                                "device_id": deviceID,
                                "device_status": device.Status,
@@ -516,6 +553,20 @@ function setDeviceStatus(params) {
     var device = findDevice(params.DeviceID);
     
     if (device) {
+      // If simulating, just update the device status without contacting a server
+      if (SIMULATE) {
+        device.Status = params.Status;
+        device.StatusUpdated = new Date();
+        device.StatusChanged = new Date();
+        
+        // Success. Let watch app know so it can update the status
+        Pebble.sendAppMessage({"function_key": Function_Key.SetStatus, 
+                                                "device_id": device.DeviceID});
+        
+        return;
+      }
+      
+      // Else send the new status to the real MyQ server
       if (haveValidToken()) {
         var attrName = null;
         var desiredStatus = null;
@@ -585,7 +636,7 @@ function setDeviceStatus(params) {
 
 // Initialize app
 function init() {
-  if (!config.username || !config.password || !decrypt(config.password)) {
+  if (!SIMULATE && (!config.username || !config.password || !decrypt(config.password))) {
     Pebble.sendAppMessage({"function_key": Function_Key.Error,
                            "error_message": "Enter both a username and password in the HomeP settings on your phone."});
   } else {

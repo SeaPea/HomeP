@@ -99,28 +99,33 @@ static void devicecard_layer_update_proc(Layer *layer, GContext *ctx) {
   GRect rect = layer_get_frame(layer);
   graphics_context_set_stroke_color(ctx, GColorWhite);
   graphics_context_set_fill_color(ctx, GColorBlack);
+#ifdef PBL_ROUND
+  graphics_fill_circle(ctx, GPoint(rect.size.w/2, rect.size.h/2), (rect.size.w/2)-1);
+  graphics_draw_circle(ctx, GPoint(rect.size.w/2, rect.size.h/2), (rect.size.w/2)-1);
+#else
   graphics_fill_rect(ctx, GRect(1, 1, rect.size.w-2, rect.size.h-2), 10, GCornersAll);
   graphics_draw_round_rect(ctx, GRect(1, 1, rect.size.w-2, rect.size.h-2), 10);
+#endif
   
   graphics_context_set_text_color(ctx, GColorWhite);
   
   // Draw location text
   graphics_draw_text(ctx, devicecard_layer->location, fonts_get_system_font(FONT_KEY_GOTHIC_14), 
-                     GRect(2, 2, rect.size.w-4, 16), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+                     GRect(2, PBL_IF_RECT_ELSE(2, 8), rect.size.w-4, 16), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
   
   // Draw name text
   graphics_draw_text(ctx, devicecard_layer->name, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD), 
-                     GRect(2, 14, rect.size.w-4, 20), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+                     GRect(2, PBL_IF_RECT_ELSE(14, 20), rect.size.w-4, 20), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
   
   // Draw status text
   char status_desc[30] = "";
   get_status_desc(devicecard_layer->device_type, devicecard_layer->status, status_desc);
   graphics_draw_text(ctx, status_desc, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD), 
-                     GRect(2, rect.size.h-36, rect.size.w-4, 20), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+                     GRect(2, rect.size.h-PBL_IF_RECT_ELSE(36, 42), rect.size.w-4, 20), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
   
   // Draw text indicating when the device status last changed
   graphics_draw_text(ctx, devicecard_layer->status_changed, fonts_get_system_font(FONT_KEY_GOTHIC_14),
-                     GRect(2, rect.size.h-22, rect.size.w-4, 16), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+                     GRect(2, rect.size.h-PBL_IF_RECT_ELSE(22, 30), rect.size.w-4, 16), GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
   
   // Draw device icon showing On/Open or Off/Closed
   GBitmap *device_icon = NULL;
@@ -193,7 +198,8 @@ static void devicecard_layer_update_proc(Layer *layer, GContext *ctx) {
     IF_COLOR(graphics_context_set_compositing_mode(ctx, GCompOpSet));
     GRect icon_bounds = IF_32(gbitmap_get_bounds(device_icon), device_icon->bounds);
     graphics_draw_bitmap_in_rect(ctx, device_icon, 
-                                 GRect((rect.size.w/2)-(icon_bounds.size.w/2), 31,
+                                 GRect((rect.size.w-icon_bounds.size.w)/2, 
+                                       (rect.size.h-icon_bounds.size.h)/2,
                                        icon_bounds.size.w, icon_bounds.size.h));
     gbitmap_destroy(device_icon);
   }
