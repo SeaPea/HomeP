@@ -1,6 +1,6 @@
 var DEBUG = false;
 var SIMULATE = false;
-var version = 'v2.2';
+var version = 'v2.3';
 
 /* Credit goes to https://github.com/pfeffed/liftmaster_myq for figuring out 
  * all the MyQ WebService URLs and parameters

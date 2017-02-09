@@ -1,0 +1,103 @@
+{
+    "author": "SeaPea Software",
+    "dependencies": {},
+    "keywords": [],
+    "name": "homep",
+    "pebble": {
+        "capabilities": [
+            "configurable"
+        ],
+        "displayName": "HomeP",
+        "enableMultiJS": false,
+        "messageKeys": {
+            "device_id": 3,
+            "device_list": 2,
+            "device_location": 4,
+            "device_name": 5,
+            "device_status": 7,
+            "device_type": 6,
+            "error_message": 1,
+            "function_key": 0,
+            "status_changed": 8
+        },
+        "projectType": "native",
+        "resources": {
+            "media": [
+                {
+                    "file": "images/UpAction.png",
+                    "name": "IMAGE_ACTION_UP",
+                    "type": "png"
+                },
+                {
+                    "file": "images/LightningAction.png",
+                    "name": "IMAGE_ACTION_SET",
+                    "type": "png"
+                },
+                {
+                    "file": "images/Lightbulb_On.png",
+                    "name": "IMAGE_LIGHTBULB_ON",
+                    "type": "png"
+                },
+                {
+                    "file": "images/Lightbulb_Off.png",
+                    "name": "IMAGE_LIGHTBULB_OFF",
+                    "type": "png"
+                },
+                {
+                    "file": "images/HomeP_AppIcon.png",
+                    "menuIcon": true,
+                    "name": "IMAGE_APPICON",
+                    "targetPlatforms": null,
+                    "type": "png"
+                },
+                {
+                    "file": "images/Garage_Step4.png",
+                    "name": "IMAGE_GARAGE_STEP4",
+                    "type": "png"
+                },
+                {
+                    "file": "images/Garage_Step3.png",
+                    "name": "IMAGE_GARAGE_STEP3",
+                    "type": "png"
+                },
+                {
+                    "file": "images/Garage_Step2.png",
+                    "name": "IMAGE_GARAGE_STEP2",
+                    "type": "png"
+                },
+                {
+                    "file": "images/Garage_Step1.png",
+                    "name": "IMAGE_GARAGE_STEP1",
+                    "type": "png"
+                },
+                {
+                    "file": "images/Garage_Open.png",
+                    "name": "IMAGE_GARAGE_OPEN",
+                    "type": "png"
+                },
+                {
+                    "file": "images/Garage_Closed.png",
+                    "name": "IMAGE_GARAGE_CLOSED",
+                    "type": "png"
+                },
+                {
+                    "file": "images/DownAction.png",
+                    "name": "IMAGE_ACTION_DOWN",
+                    "type": "png"
+                }
+            ]
+        },
+        "sdkVersion": "3",
+        "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+        ],
+        "uuid": "40f772c3-87f6-4b8c-a480-0508421748dc",
+        "watchapp": {
+            "watchface": false
+        }
+    },
+    "version": "2.3.0"
+}
