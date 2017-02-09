@@ -9,8 +9,8 @@ var WS_APPID = "Vj8pQggXLhLy0WHahglCD4N1nAkkXQtGYpq2HrHD7H1nvmbT55KqtN6RSF4ILB%2
 var WS_Culture = "en";
 
 var WS_HOST = "https://myqexternal.myqdevice.com/";
-var WS_URL_Login = WS_HOST + "Membership/ValidateUserWithCulture?appId=" + WS_APPID + "&securityToken=null&username={username}&password={password}&culture=" + WS_Culture;
-var WS_URL_Device_List = WS_HOST + "api/UserDeviceDetails?appId=" + WS_APPID + "&securityToken={securityToken}";
+var WS_URL_Login = WS_HOST + "api/user/validatewithculture?appId=" + WS_APPID + "&securityToken=null&username={username}&password={password}&culture=" + WS_Culture;
+var WS_URL_Device_List = WS_HOST + "api/userdevicedetails?appId=" + WS_APPID + "&securityToken={securityToken}";
 var WS_URL_Device_GetAttr = WS_HOST + "Device/getDeviceAttribute?appId=" + WS_APPID + "&securityToken={securityToken}&devId={deviceId}&name={attrName}";
 var WS_URL_Device_SetAttr = WS_HOST + "Device/setDeviceAttribute";
 
