@@ -3,7 +3,7 @@ var SIMULATE = false;
 var version = 'v2.3';
 
 /* Credit goes to https://github.com/pfeffed/liftmaster_myq for figuring out 
- * all the MyQ WebService URLs and parameters
+ * all the MyQ WebService URLs and parameters and WilliamRandol for the updated endpoints
  */
 var WS_APPID = "Vj8pQggXLhLy0WHahglCD4N1nAkkXQtGYpq2HrHD7H1nvmbT55KqtN6RSF4ILB%2Fi";
 var WS_Culture = "en";
