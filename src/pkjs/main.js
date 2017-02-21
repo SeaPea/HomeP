@@ -1,20 +1,31 @@
-var DEBUG = false;
+var DEBUG = true;
 var SIMULATE = false;
-var version = 'v2.3';
+var version = 'v2.4';
 
-/* Credit goes to https://github.com/pfeffed/liftmaster_myq for figuring out 
- * all the MyQ WebService URLs and parameters and WilliamRandol for the updated endpoints
+/* Credit goes to https://github.com/arraylabs/myq/ for figuring out 
+ * all the latest MyQ WebService URLs and parameters
  */
-var WS_APPID = "Vj8pQggXLhLy0WHahglCD4N1nAkkXQtGYpq2HrHD7H1nvmbT55KqtN6RSF4ILB%2Fi";
+var WS_APPID = "NWknvuBd7LoFHfXmKNMBcgajXtZEgKUh4V7WNzMidrpUUluDpVYVZx+xT4PCM5Kx";
+var WS_BRAND_ID = "2";
+var WS_API_VERSION = "4.1";
 var WS_Culture = "en";
 
 var WS_HOST = "https://myqexternal.myqdevice.com/";
-var WS_URL_Login = WS_HOST + "api/user/validatewithculture?appId=" + WS_APPID + "&securityToken=null&username={username}&password={password}&culture=" + WS_Culture;
-var WS_URL_Device_List = WS_HOST + "api/userdevicedetails?appId=" + WS_APPID + "&securityToken={securityToken}";
-var WS_URL_Device_GetAttr = WS_HOST + "Device/getDeviceAttribute?appId=" + WS_APPID + "&securityToken={securityToken}&devId={deviceId}&name={attrName}";
-var WS_URL_Device_SetAttr = WS_HOST + "Device/setDeviceAttribute";
+var WS_URL_Login = WS_HOST + "api/v4/User/Validate";
+var WS_URL_Device_List = WS_HOST + "api/v4/UserDeviceDetails/Get";
+var WS_URL_Device_GetAttr = WS_HOST + "api/v4/DeviceAttribute/GetDeviceAttribute";
+var WS_URL_Device_SetAttr = WS_HOST + "api/v4/DeviceAttribute/PutDeviceAttribute";
 
 var WS_SetAttr_Body = { AttributeName: "", DeviceId: "0", ApplicationId: WS_APPID, AttributeValue: 0, SecurityToken: "" };
+
+// Headers for use in API calls
+var headers = {
+  "Content-Type": "application/json",
+  "BrandId": WS_BRAND_ID,
+  "ApiVersion": WS_API_VERSION,
+  "Culture": WS_Culture,
+  "MyQApplicationId": WS_APPID
+};
 
 // Watch app communication function enum
 var Function_Key = {
@@ -133,7 +144,7 @@ function timeToDesc(time) {
 }
 
 // Make HTTP GET request to a URL. Call 'success' with response JSON on success. Call error on HTTP error
-function getData(url, success, error) {
+function getData(url, params, success, error) {
   var req = new XMLHttpRequest();
   var timeout = null;
   
@@ -152,11 +163,63 @@ function getData(url, success, error) {
     }
   };
   
-  // Start 45 second timeout for HTTP request
-  timeout = setTimeout(function() { req.abort(); error("Server communication timed out"); }, 45000);
+  if (params){
+    var paramStrings = [];
+    for(var paramName in params) {
+      paramStrings.push(paramName + "=" + encodeURIComponent(params[paramName]));
+    }
+    url += "?";
+    url += paramStrings.join("&");
+  }
+  
+  if (DEBUG) console.log("GETing URL: " + url);
+  
+  // Start 10 second timeout for HTTP request
+  timeout = setTimeout(function() { req.abort(); error("Server communication timed out"); }, 10000);
   
   req.open("GET", url, true);
+  
+  // Apply headers
+  for(var headerName in headers) {
+    req.setRequestHeader(headerName, headers[headerName]);
+  }
+  if (haveValidToken()) req.setRequestHeader("SecurityToken", config.token);
+  // Send GET request
   req.send();
+}
+
+// Send a JSON object to a URL using a HTTP POST request. Call 'success' on success and 'error' on HTTP error
+function postData(url, data, success, error) {
+  var req = new XMLHttpRequest();
+  var timeout = null;
+  
+  req.onload = function(e) {
+    if (req.readyState == 4) {
+      // HTTP request completed
+      clearTimeout(timeout);
+      
+      if (req.status == 200) {
+        if (DEBUG) console.log("POST Response: " + req.responseText);
+        success(JSON.parse(req.responseText));
+      } else {
+        if (DEBUG) console.log("POST Error: " + req.status);
+        error("HTTP error: " + req.status);
+      }
+    }
+  };
+  
+  // Start 10 seconds timeout for HTTP request
+  timeout = setTimeout(function() { req.abort(); error("Server communication timed out"); }, 10000);
+  
+  if (DEBUG) console.log("Posting data: " + JSON.stringify(data));
+  req.open("POST", url, true);
+  // Apply headers
+  for(var headerName in headers) {
+    req.setRequestHeader(headerName, headers[headerName]);
+  }
+  if (haveValidToken()) req.setRequestHeader("SecurityToken", config.token);
+  // POST JSON data to server
+  req.send(JSON.stringify(data));
 }
 
 // Send a JSON object to a URL using a HTTP PUT request. Call 'success' on success and 'error' on HTTP error
@@ -179,13 +242,17 @@ function putData(url, data, success, error) {
     }
   };
   
-  // Start 45 seconds timeout for HTTP request
-  timeout = setTimeout(function() { req.abort(); error("Server communication timed out"); }, 45000);
+  // Start 10 seconds timeout for HTTP request
+  timeout = setTimeout(function() { req.abort(); error("Server communication timed out"); }, 10000);
   
   if (DEBUG) console.log("Putting data: " + JSON.stringify(data));
   req.open("PUT", url, true);
-  // Send JSON data to server
-  req.setRequestHeader("Content-Type", "application/json");
+  // Apply headers
+  for(var headerName in headers) {
+    req.setRequestHeader(headerName, headers[headerName]);
+  }
+  if (haveValidToken()) req.setRequestHeader("SecurityToken", config.token);
+  // PUT JSON data to server
   req.send(JSON.stringify(data));
 }
 
@@ -204,9 +271,9 @@ function login(success, param, error) {
       } else {
         loginCount++;
         
-        getData(WS_URL_Login.replace("{username}", 
-                                     encodeURIComponent(config.username)).replace("{password}",
-                                                              encodeURIComponent(decrypt(config.password))),
+        var credentials = {username: config.username, password: decrypt(config.password)};
+        
+        postData(WS_URL_Login, credentials,
                function(data) {
                  // HTTP success
                  if (data.ReturnCode) {
@@ -253,7 +320,7 @@ function login(success, param, error) {
 function getAttrVal(device, name) {
   if (device && device.Attributes && Array.isArray(device.Attributes)) {
     for (var i = 0; i < device.Attributes.length; i++) {
-      if (device.Attributes[i].Name == name) return device.Attributes[i].Value;
+      if (device.Attributes[i].AttributeDisplayName == name) return device.Attributes[i].Value;
     }
     return null;
   } else {
@@ -265,7 +332,7 @@ function getAttrVal(device, name) {
 function getAttrUpdatedTime(device, name) {
   if (device && device.Attributes && Array.isArray(device.Attributes)) {
     for (var i = 0; i < device.Attributes.length; i++) {
-      if (device.Attributes[i].Name == name) return new Date(parseInt(device.Attributes[i].UpdatedTime));
+      if (device.Attributes[i].AttributeDisplayName == name) return new Date(parseInt(device.Attributes[i].UpdatedTime));
     }
     return null;
   } else {
@@ -278,7 +345,7 @@ function getAttrUpdatedTime(device, name) {
 function getParentDeviceName(devices, parentid) {
   if (devices && Array.isArray(devices)) {
     for (var i = 0; i < devices.length; i++) {
-      if (devices[i].DeviceId == parentid) return getAttrVal(devices[i], "desc");
+      if (devices[i].MyQDeviceId == parentid) return getAttrVal(devices[i], "desc");
     }
     return "";
   } else {
@@ -333,7 +400,7 @@ function getDeviceList() {
       
       // Else fetch the latest device list from the MyQ server
       if (haveValidToken()) {
-        getData(WS_URL_Device_List.replace("{securityToken}", encodeURIComponent(config.token)),
+        getData(WS_URL_Device_List, null,
                function(data) {
                  // HTTP Success
                  if (data.ReturnCode) {
@@ -346,20 +413,20 @@ function getDeviceList() {
                        config.devices = [];
                        if (data.Devices && Array.isArray(data.Devices)) {
                          for (var i = 0; i < data.Devices.length; i++) {
-                           if (data.Devices[i].DeviceId && (data.Devices[i].TypeName || data.Devices[i].TypeId)) {
+                           if (data.Devices[i].MyQDeviceId && (data.Devices[i].MyQDeviceTypeName || data.Devices[i].MyQDeviceTypeId)) {
                              // MyQ Garage Door openers have "garage door" in the TypeName or TypeID of 47.
                              // "MyQ Garage" devices for 3rd party devices have VGDO in the TypeName or TypeID of 259 and a 
                              //  'oemtransmitter' attribute value that is not 255 (filters out the duplicate)
-                             if ((data.Devices[i].TypeName && data.Devices[i].TypeName.search(/garage\s*door/i) != -1) || 
-                                 (data.Devices[i].TypeId && data.Devices[i].TypeId == 47) ||
-                                 (((data.Devices[i].TypeName && data.Devices[i].TypeName.search(/gdo/i) != -1 && 
-                                    data.Devices[i].TypeName.search(/gateway/i) == -1) || 
-                                    (data.Devices[i].TypeId && data.Devices[i].TypeId == 259)) &&
+                             if ((data.Devices[i].MyQDeviceTypeName && data.Devices[i].MyQDeviceTypeName.search(/garage\s*door/i) != -1) || 
+                                 (data.Devices[i].MyQDeviceTypeId && data.Devices[i].MyQDeviceTypeId == 47) ||
+                                 (((data.Devices[i].MyQDeviceTypeName && data.Devices[i].MyQDeviceTypeName.search(/gdo/i) != -1 && 
+                                    data.Devices[i].MyQDeviceTypeName.search(/gateway/i) == -1) || 
+                                    (data.Devices[i].MyQDeviceTypeId && data.Devices[i].MyQDeviceTypeId == 259)) &&
                                        getAttrVal(data.Devices[i], "oemtransmitter") != 255 &&
                                        getAttrVal(data.Devices[i], "desc"))) {
                                
                                if (DEBUG) {
-                                 console.log("Adding Garage Door - DeviceID: " + data.Devices[i].DeviceId + 
+                                 console.log("Adding Garage Door - DeviceID: " + data.Devices[i].MyQDeviceId + 
                                              ", gatewayID: " + getAttrVal(data.Devices[i], "gatewayID") + 
                                              ", desc: " + getAttrVal(data.Devices[i], "desc") + 
                                              ", doortstate: " + getAttrVal(data.Devices[i], "doorstate") + 
@@ -367,19 +434,19 @@ function getDeviceList() {
                                }
                                
                                // Add Garage Door Openers devices to JS array
-                               config.devices.push({DeviceID: parseInt(data.Devices[i].DeviceId),
+                               config.devices.push({DeviceID: parseInt(data.Devices[i].MyQDeviceId),
                                                     Type: Device_Type.GarageDoor,
-                                                    Location: getParentDeviceName(data.Devices, getAttrVal(data.Devices[i], "gatewayID")),
+                                                    Location: getParentDeviceName(data.Devices, data.Devices[i].ParentMyQDeviceId),
                                                     Name: getAttrVal(data.Devices[i], "desc"),
                                                     Status: parseInt(getAttrVal(data.Devices[i], "doorstate")),
                                                     StatusUpdated: new Date(),
                                                     StatusChanged: getAttrUpdatedTime(data.Devices[i], "doorstate")});
     
                                // Build C-style array of device IDs for passing to the Pebble
-                               appendInt32(deviceids, parseInt(data.Devices[i].DeviceId));
+                               appendInt32(deviceids, parseInt(data.Devices[i].MyQDeviceId));
                                
-                             } else if ((data.Devices[i].TypeName && data.Devices[i].TypeName.search(/light/i) != -1) || 
-                                 (data.Devices[i].TypeId && data.Devices[i].TypeId == 48)) {
+                             } else if ((data.Devices[i].MyQDeviceTypeName && data.Devices[i].MyQDeviceTypeName.search(/light/i) != -1) || 
+                                 (data.Devices[i].MyQDeviceTypeId && data.Devices[i].MyQDeviceTypeId == 48)) {
                                
                                if (DEBUG) {
                                  console.log("Adding Light Switch - DeviceID: " + data.Devices[i].DeviceId + 
@@ -390,16 +457,16 @@ function getDeviceList() {
                                }
                                
                                // Add Light Switch devices to JS array
-                               config.devices.push({DeviceID: parseInt(data.Devices[i].DeviceId),
+                               config.devices.push({DeviceID: parseInt(data.Devices[i].MyQDeviceId),
                                                     Type: Device_Type.LightSwitch,
-                                                    Location: getParentDeviceName(data.Devices, getAttrVal(data.Devices[i], "gatewayID")),
+                                                    Location: getParentDeviceName(data.Devices, data.Devices[i].ParentMyQDeviceId),
                                                     Name: getAttrVal(data.Devices[i], "desc"),
                                                     Status: parseInt(getAttrVal(data.Devices[i], "lightstate")),
                                                     StatusUpdated: new Date(),
                                                     StatusChanged: getAttrUpdatedTime(data.Devices[i], "lightstate")});
     
                                // Build C-style array of device IDs for passing to the Pebble
-                               appendInt32(deviceids, parseInt(data.Devices[i].DeviceId));
+                               appendInt32(deviceids, parseInt(data.Devices[i].MyQDeviceId));
                                
                              }
                            }
@@ -476,10 +543,12 @@ function getDeviceStatus(deviceID) {
           }
           
           if (attrName) {
-            getData(WS_URL_Device_GetAttr.replace("{securityToken}", 
-                                                 encodeURIComponent(config.token)).replace("{deviceId}", 
-                                                                       deviceID).replace("{attrName}", 
-                                                                                    encodeURIComponent(attrName)),
+            var params = {
+              myQDeviceId: deviceID,
+              attributeName: attrName
+            };
+            
+            getData(WS_URL_Device_GetAttr, params,
                    function(data) {
                      // HTTP Success
                      if (data.ReturnCode) {
@@ -580,9 +649,8 @@ function setDeviceStatus(params) {
         } 
         if (attrName) {
           // Setup object for setting device attribute
-          WS_SetAttr_Body.SecurityToken = config.token;
-          WS_SetAttr_Body.DeviceId = params.DeviceID.toString();
-          WS_SetAttr_Body.AttributeName = attrName;
+          WS_SetAttr_Body.myQDeviceId = params.DeviceID.toString();
+          WS_SetAttr_Body.attributeName = attrName;
           WS_SetAttr_Body.AttributeValue = desiredStatus;
           
           // Send attribute data to server
