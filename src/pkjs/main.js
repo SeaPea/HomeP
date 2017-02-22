@@ -1,9 +1,10 @@
-var DEBUG = true;
+var DEBUG = false;
 var SIMULATE = false;
 var version = 'v2.4';
 
-/* Credit goes to https://github.com/arraylabs/myq/ for figuring out 
- * all the latest MyQ WebService URLs and parameters
+/* Credit goes to https://github.com/arraylabs/myq/ for  
+ * most of the latest MyQ WebService URLs and parameters or wherever they got them from,
+ * and code contributions from WilliamRandol
  */
 var WS_APPID = "NWknvuBd7LoFHfXmKNMBcgajXtZEgKUh4V7WNzMidrpUUluDpVYVZx+xT4PCM5Kx";
 var WS_BRAND_ID = "2";
@@ -15,8 +16,6 @@ var WS_URL_Login = WS_HOST + "api/v4/User/Validate";
 var WS_URL_Device_List = WS_HOST + "api/v4/UserDeviceDetails/Get";
 var WS_URL_Device_GetAttr = WS_HOST + "api/v4/DeviceAttribute/GetDeviceAttribute";
 var WS_URL_Device_SetAttr = WS_HOST + "api/v4/DeviceAttribute/PutDeviceAttribute";
-
-var WS_SetAttr_Body = { AttributeName: "", DeviceId: "0", ApplicationId: WS_APPID, AttributeValue: 0, SecurityToken: "" };
 
 // Headers for use in API calls
 var headers = {
@@ -649,12 +648,14 @@ function setDeviceStatus(params) {
         } 
         if (attrName) {
           // Setup object for setting device attribute
-          WS_SetAttr_Body.myQDeviceId = params.DeviceID.toString();
-          WS_SetAttr_Body.attributeName = attrName;
-          WS_SetAttr_Body.AttributeValue = desiredStatus;
+          var deviceParams = {
+            myQDeviceId: params.DeviceID.toString(),
+            attributeName: attrName,
+            AttributeValue: desiredStatus,
+          };
           
           // Send attribute data to server
-          putData(WS_URL_Device_SetAttr, WS_SetAttr_Body, 
+          putData(WS_URL_Device_SetAttr, deviceParams, 
                  function(data) {
                    // HTTP Success
                    if (data.ReturnCode) {
