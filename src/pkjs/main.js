@@ -1,6 +1,6 @@
 var DEBUG = false;
 var SIMULATE = false;
-var version = 'v2.4';
+var version = 'v2.5';
 
 /* Credit goes to https://github.com/arraylabs/myq/ for  
  * most of the latest MyQ WebService URLs and parameters or wherever they got them from,
@@ -426,7 +426,7 @@ function getDeviceList() {
                                
                                if (DEBUG) {
                                  console.log("Adding Garage Door - DeviceID: " + data.Devices[i].MyQDeviceId + 
-                                             ", gatewayID: " + getAttrVal(data.Devices[i], "gatewayID") + 
+                                             ", gatewayID: " + data.Devices[i].ParentMyQDeviceId + 
                                              ", desc: " + getAttrVal(data.Devices[i], "desc") + 
                                              ", doortstate: " + getAttrVal(data.Devices[i], "doorstate") + 
                                              ", stateUpdatedTime: " + getAttrUpdatedTime(data.Devices[i], "doorstate"));
@@ -444,12 +444,12 @@ function getDeviceList() {
                                // Build C-style array of device IDs for passing to the Pebble
                                appendInt32(deviceids, parseInt(data.Devices[i].MyQDeviceId));
                                
-                             } else if ((data.Devices[i].MyQDeviceTypeName && data.Devices[i].MyQDeviceTypeName.search(/light/i) != -1) || 
+                             } else if ((data.Devices[i].MyQDeviceTypeName && data.Devices[i].MyQDeviceTypeName.search(/light|lamp/i) != -1) || 
                                  (data.Devices[i].MyQDeviceTypeId && data.Devices[i].MyQDeviceTypeId == 48)) {
                                
                                if (DEBUG) {
-                                 console.log("Adding Light Switch - DeviceID: " + data.Devices[i].DeviceId + 
-                                             ", gatewayID: " + getAttrVal(data.Devices[i], "gatewayID") + 
+                                 console.log("Adding Light Switch - DeviceID: " + data.Devices[i].MyQDeviceId + 
+                                             ", gatewayID: " + data.Devices[i].ParentMyQDeviceId + 
                                              ", desc: " + getAttrVal(data.Devices[i], "desc") + 
                                              ", lightstate: " + getAttrVal(data.Devices[i], "lightstate") + 
                                              ", stateUpdatedTime: " + getAttrUpdatedTime(data.Devices[i], "lightstate"));
